@@ -192,61 +192,54 @@
                 </div>
             </div>
 
-            <!-- Split View -->
-            <div class="split-view">
-                <!-- Raw Prompt Editor -->
-                <div class="editor-section">
-                    <h2>Raw Prompt</h2>
-                    <div class="raw-prompt-container">
-                        <div class="raw-prompt-input-container">
-                            <label for="raw-prompt-input">Input</label>
-                            <textarea 
-                                id="raw-prompt-input"
-                                x-model="$store.rawPrompt" 
-                                placeholder="Type your prompt here (e.g., Using {{vault}}...)"
-                                class="raw-prompt-input"
-                            ></textarea>
-                        </div>
-                        <div class="raw-prompt-preview-container">
-                            <label>Preview</label>
-                            <div 
-                                x-html="formatRawPrompt()" 
-                                class="raw-prompt-preview"
-                            ></div>
-                        </div>
-                    </div>
+            <!-- Raw Prompt Editor -->
+            <div class="raw-prompt-container">
+                <h2>Raw Prompt</h2>
+                <div class="raw-prompt-input-container">
+                    <label for="raw-prompt-input">Input</label>
+                    <textarea 
+                        id="raw-prompt-input"
+                        x-model="$store.rawPrompt" 
+                        placeholder="Type your prompt here (e.g., Using {{vault}}...)"
+                        class="raw-prompt-input"
+                    ></textarea>
                 </div>
+                <div class="raw-prompt-preview-container">
+                    <label>Preview</label>
+                    <div 
+                        x-html="formatRawPrompt()" 
+                        class="raw-prompt-preview"
+                    ></div>
+                </div>
+            </div>
 
-                <!-- Final Prompt Viewer -->
-                <div class="editor-section">
-                    <h2>Final Prompt</h2>
-                    <div class="final-prompt-container">
-                        <template x-if="formatFinalPrompt()">
-                            <div class="final-prompt-content">
-                                <div class="final-prompt-header">
-                                    <div class="prompt-stats">
-                                        <span x-text="`${Alpine.store('finalPrompt').length} chars`"></span>
-                                        <span x-text="`~${Math.ceil(Alpine.store('finalPrompt').length / 4)} tokens`"></span>
-                                    </div>
-                                    <div class="prompt-actions">
-                                        <button title="Copy to Clipboard" @click="copyToClipboard()">📋</button>
-                                        <button title="Save to File" @click="saveToFile()">💾</button>
-                                    </div>
-                                </div>
-                                <div x-html="formatFinalPrompt()" class="final-prompt-viewer"></div>
+            <!-- Final Prompt Viewer -->
+            <div class="final-prompt-container">
+                <h2>Final Prompt</h2>
+                <template x-if="formatFinalPrompt()">
+                    <div class="final-prompt-content">
+                        <div class="final-prompt-header">
+                            <div class="prompt-stats">
+                                <span x-text="`${Alpine.store('finalPrompt').length} chars`"></span>
+                                <span x-text="`~${Math.ceil(Alpine.store('finalPrompt').length / 4)} tokens`"></span>
                             </div>
-                        </template>
-                        <template x-if="!formatFinalPrompt()">
-                            <div class="final-prompt-error">
-                                <div class="error-icon">⚠️</div>
-                                <div class="error-message">
-                                    <h3>Invalid Aliases Detected</h3>
-                                    <p>Check your Raw Prompt for any misspelled or undefined aliases (highlighted in red).</p>
-                                </div>
+                            <div class="prompt-actions">
+                                <button title="Copy to Clipboard" @click="copyToClipboard()">📋</button>
+                                <button title="Save to File" @click="saveToFile()">💾</button>
                             </div>
-                        </template>
+                        </div>
+                        <div x-html="formatFinalPrompt()" class="final-prompt-viewer"></div>
                     </div>
-                </div>
+                </template>
+                <template x-if="!formatFinalPrompt()">
+                    <div class="final-prompt-error">
+                        <div class="error-icon">⚠️</div>
+                        <div class="error-message">
+                            <h3>Invalid Aliases Detected</h3>
+                            <p>Check your Raw Prompt for any misspelled or undefined aliases (highlighted in red).</p>
+                        </div>
+                    </div>
+                </template>
             </div>
         </div>
     </div>
