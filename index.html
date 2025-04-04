@@ -1,0 +1,105 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>ContextSmash</title>
+    <!-- Dependencies -->
+    <script src="https://unpkg.com/htmx.org@1.9.10"></script>
+    <script defer src="https://unpkg.com/alpinejs@3.13.3/dist/cdn.min.js"></script>
+    <!-- Styles -->
+    <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+    <!-- Notification System -->
+    <div class="notifications" x-data="{ notifications: Alpine.store('notifications') }">
+        <template x-for="notification in notifications" :key="notification.id">
+            <div class="notification" :class="notification.type" x-text="notification.message"></div>
+        </template>
+    </div>
+
+    <div class="container" x-data="{ 
+        files: Alpine.store('files'),
+        aliases: Alpine.store('aliases'),
+        rawPrompt: Alpine.store('rawPrompt'),
+        finalPrompt: Alpine.store('finalPrompt'),
+        newAlias: '',
+        selectedFile: null
+    }">
+        <!-- Symbol Map Section -->
+        <div class="symbol-map">
+            <h2>Symbol Map</h2>
+            <div class="alias-list">
+                <template x-for="(content, alias) in aliases" :key="alias">
+                    <div class="alias-item">
+                        <span class="alias-tag">{{alias}}</span>
+                        <span class="alias-content" x-text="content.substring(0, 50) + (content.length > 50 ? '...' : '')"></span>
+                        <button @click="deleteAlias(alias)" class="delete-btn">×</button>
+                    </div>
+                </template>
+            </div>
+        </div>
+
+        <!-- Main Content Area -->
+        <div class="main-content">
+            <!-- File Picker Section -->
+            <div class="file-picker">
+                <h2>Files</h2>
+                <div class="upload-area">
+                    <input type="file" multiple id="file-input">
+                    <p>or drag and drop files here</p>
+                </div>
+                <div class="file-list">
+                    <template x-for="file in files" :key="file.name">
+                        <div class="file-item" :class="{ 'selected': selectedFile === file }">
+                            <div class="file-info" @click="selectedFile = file">
+                                <span class="file-name" x-text="file.name"></span>
+                                <span class="file-size" x-text="formatFileSize(file.size)"></span>
+                            </div>
+                            <button @click="removeFile(file)" class="delete-btn">×</button>
+                            <div class="alias-input" x-show="selectedFile === file">
+                                <input 
+                                    type="text" 
+                                    x-model="newAlias" 
+                                    placeholder="Enter alias (e.g., vault)"
+                                    @keyup.enter="assignAlias(file)"
+                                >
+                                <button @click="assignAlias(file)">Assign</button>
+                            </div>
+                        </div>
+                    </template>
+                </div>
+            </div>
+
+            <!-- Split View -->
+            <div class="split-view">
+                <!-- Raw Prompt Editor -->
+                <div class="editor-section">
+                    <h2>Raw Prompt</h2>
+                    <textarea 
+                        x-model="rawPrompt"
+                        placeholder="Type your prompt here... Use {{alias}} to reference files"
+                    ></textarea>
+                </div>
+
+                <!-- Final Prompt Viewer -->
+                <div class="preview-section">
+                    <h2>Final Prompt</h2>
+                    <div class="preview-content" x-text="finalPrompt"></div>
+                    <div class="preview-meta">
+                        <span>Characters: <span x-text="finalPrompt.length"></span></span>
+                        <span>Tokens (est): <span x-text="Math.ceil(finalPrompt.length / 4)"></span></span>
+                        <div class="button-group">
+                            <button @click="copyToClipboard">Copy to Clipboard</button>
+                            <button @click="saveToFile">Save to File</button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Scripts -->
+    <script src="app.js"></script>
+</body>
+</html> 
