@@ -12,7 +12,50 @@
         <h1>ContextSmash</h1>
         <div class="attribution">by @joenorton</div>
     </header>
+
+    <nav class="menu-bar">
+        <div class="container">
+            <div class="menu-items">
+                <button class="menu-button" @click="openWorkflow()">
+                    <span class="menu-icon">📂</span>
+                    Open Workflow
+                </button>
+                <button class="menu-button" @click="saveWorkflow()">
+                    <span class="menu-icon">💾</span>
+                    Save Workflow
+                </button>
+                <div class="menu-right">
+                    <button class="menu-button" @click="clearWorkflow()">
+                        <span class="menu-icon">🗑️</span>
+                        Clear Workflow
+                    </button>
+                </div>
+            </div>
+        </div>
+    </nav>
+
     <div class="container">
+        <!-- Workflow Save Dialog -->
+        <div class="dialog-overlay" x-show="showWorkflowSaveDialog" style="display: none;">
+            <div class="dialog">
+                <h3>Save Workflow</h3>
+                <div class="dialog-content">
+                    <label for="workflow-filename-input">Filename:</label>
+                    <input 
+                        type="text" 
+                        id="workflow-filename-input" 
+                        x-model="workflowFilename" 
+                        placeholder="Enter workflow filename"
+                        @keyup.enter="confirmWorkflowSave"
+                    >
+                </div>
+                <div class="dialog-actions">
+                    <button @click="showWorkflowSaveDialog = false" class="dialog-button">Cancel</button>
+                    <button @click="confirmWorkflowSave" class="dialog-button primary">Save</button>
+                </div>
+            </div>
+        </div>
+
         <!-- Filename Dialog -->
         <div class="dialog-overlay" x-show="showFilenameDialog" style="display: none;">
             <div class="dialog">
@@ -65,6 +108,7 @@
                                 <span x-text="file.name"></span>
                                 <span class="file-size" x-text="formatFileSize(file.size)"></span>
                                 <span class="file-alias" x-text="getAliasForFile(file)"></span>
+                                <span class="edit-icon">✏️</span>
                             </div>
                             <button @click="removeFile(file)" class="delete-button">×</button>
                             <div class="alias-input" x-show="selectedFile === file">
@@ -103,25 +147,28 @@
                 <!-- Raw Prompt Editor -->
                 <div class="editor-section">
                     <h2>Raw Prompt</h2>
-                    <textarea 
-                        x-model="$store.rawPrompt" 
-                        class="prompt-editor"
-                        placeholder="Type your prompt here..."
-                    ></textarea>
+                    <div class="prompt-editor"
+                        contenteditable="true"
+                        x-html="formatRawPrompt()"
+                        @input="handleRawPromptInput($event)"
+                        @keydown.enter.prevent
+                    ></div>
                 </div>
 
                 <!-- Final Prompt Viewer -->
                 <div class="viewer-section">
-                    <h2>Final Prompt</h2>
-                    <div class="prompt-viewer" x-text="$store.finalPrompt"></div>
+                    <div class="viewer-header">
+                        <h2>Final Prompt</h2>
+                        <div class="viewer-actions">
+                            <button @click="copyToClipboard" class="icon-button" title="Copy to Clipboard">📋</button>
+                            <button @click="saveToFile" class="icon-button" title="Save to File">💾</button>
+                        </div>
+                    </div>
                     <div class="prompt-meta">
                         <span>Characters: <span x-text="$store.finalPrompt.length"></span></span>
                         <span>Tokens (est): <span x-text="Math.ceil($store.finalPrompt.length / 4)"></span></span>
                     </div>
-                    <div class="prompt-actions">
-                        <button @click="copyToClipboard" class="action-button">Copy to Clipboard</button>
-                        <button @click="saveToFile" class="action-button">Save to File</button>
-                    </div>
+                    <div class="prompt-viewer" x-html="formatFinalPrompt()"></div>
                 </div>
             </div>
         </div>

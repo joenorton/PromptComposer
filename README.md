@@ -1,31 +1,50 @@
 # ContextSmash
 
-A web-based tool for crafting prompts with real-time feedback and symbolic file aliasing.
+⚡ a lean, local-first prompt crafting tool with symbolic file aliasing and real-time preview. built for hackers, prompt engineers, and LLM nerds who want clarity before compute.
 
-## Features
+## 🔥 Features
 
-- File upload and symbolic aliasing
-- Real-time prompt editing with live preview
-- Character and token count estimation
-- Session persistence
+- 🗃 drag & drop file upload with symbolic aliases (e.g. `{{vault}}`)
+- ✍️ real-time prompt editing with instant alias resolution
+- 📊 character + token count estimation (1 token ≈ 4 chars)
+- 💾 session persistence via localStorage
+- 📋 copy or download resolved prompt in one click
 
-## Setup
+## 🧪 Try It Out
 
-1. Clone this repository
-2. Start a local development server:
-   ```bash
-   # Using Python's built-in server
-   python -m http.server 8000
-   ```
-3. Open `http://localhost:8000` in your browser
+**GitHub Pages:**  
+Coming soon — or host it locally:
 
-## Development
+```bash
+git clone https://github.com/joenorton/contextsmash.git
+cd contextsmash
+python -m http.server 8000
+```
 
-This project uses:
-- HTMX for server-driven updates
-- Alpine.js for reactive components
-- Browser File System Access API for file handling
+Then open: [http://localhost:8000](http://localhost:8000)
 
-## License
+## 🧠 Tech Stack
 
-MIT License - See LICENSE file for details 
+- [HTMX](https://htmx.org/) — server-enhanced UX, minimal JS
+- [Alpine.js](https://alpinejs.dev/) — reactive UI, no bloat
+- Vanilla HTML/CSS/JS — no build step, just open and go
+
+## 📁 Structure
+
+```
+index.html      → main UI
+app.js          → logic & state (Alpine.js)
+styles.css      → minimal, clean styling
+```
+
+## 🚀 Deployment
+
+To deploy via GitHub Pages:
+1. Push code to `main`
+2. In repo settings → Pages → select root of `main` as source
+3. Visit: `https://yourusername.github.io/contextsmash/`
+
+## 📜 License
+
+MIT — do whatever, just don’t claim you wrote it.  
+(c) [@joenorton](https://twitter.com/joenorton)
