@@ -49,48 +49,8 @@ document.addEventListener('alpine:init', () => {
         // File handling
         handleFiles(event) {
             const files = Array.from(event.target.files);
-            const validTypes = [
-                'text/plain',
-                'application/json',
-                'text/markdown',
-                'text/x-markdown',
-                'text/javascript',
-                'application/javascript',
-                'text/x-python',
-                'text/x-java',
-                'text/x-c',
-                'text/x-c++',
-                'text/x-csrc',
-                'text/x-c++src',
-                'text/x-csharp',
-                'text/x-php',
-                'text/x-ruby',
-                'text/x-go',
-                'text/x-rust',
-                'text/x-swift',
-                'text/x-kotlin',
-                'text/x-scala',
-                'text/x-typescript',
-                'text/x-coffeescript',
-                'text/x-lua',
-                'text/x-perl',
-                'text/x-shellscript',
-                'text/x-yaml',
-                'text/x-toml',
-                'text/x-ini',
-                'text/x-xml',
-                'text/x-html',
-                'text/x-css',
-                'text/x-sql'
-            ];
             
             files.forEach(file => {
-                // Validate file type
-                if (!validTypes.includes(file.type)) {
-                    this.showNotification(`Unsupported file type: ${file.name}`, 'error');
-                    return;
-                }
-
                 const reader = new FileReader();
                 
                 reader.onload = (e) => {
