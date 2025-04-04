@@ -39,13 +39,6 @@ app.js          → logic & state (Alpine.js)
 styles.css      → minimal, clean styling
 ```
 
-## 🚀 Deployment
-
-To deploy via GitHub Pages:
-1. Push code to `main`
-2. In repo settings → Pages → select root of `main` as source
-3. Visit: `https://yourusername.github.io/contextsmash/`
-
 ## 📜 License
 
 MIT — do whatever, just don’t claim you wrote it.  
