@@ -5,9 +5,15 @@
 ## 🔥 Features
 
 - 🗃 drag & drop file upload with symbolic aliases (e.g. `{{vault}}`)
-- ✍️ real-time prompt editing with instant alias resolution
+- 🔣 manual alias creation for custom symbols and reusable text snippets
+- 🖊️ inline alias editing for both files and manual aliases
+- ✨ intelligent highlighting with color-coded valid, invalid, and repeated aliases
+- ✍️ real-time prompt editing with instant alias resolution and preview
+- 🔍 error detection for invalid aliases with visual feedback
 - 📊 character + token count estimation (1 token ≈ 4 chars)
-- 💾 session persistence via localStorage
+- 💾 workflow save/load to preserve your entire workspace setup
+- 🌙 dark mode support for comfortable night-time work
+- 🔄 session persistence via localStorage
 - 📋 copy or download resolved prompt in one click
 
 ## 🧪 Try It Out
@@ -27,7 +33,6 @@ Then open: [http://localhost:8000](http://localhost:8000)
 
 ## 🧠 Tech Stack
 
-- [HTMX](https://htmx.org/) — server-enhanced UX, minimal JS
 - [Alpine.js](https://alpinejs.dev/) — reactive UI, no bloat
 - Vanilla HTML/CSS/JS — no build step, just open and go
 
@@ -41,5 +46,5 @@ styles.css      → minimal, clean styling
 
 ## 📜 License
 
-MIT — do whatever, just don’t claim you wrote it.  
+MIT — do whatever, just don't claim you wrote it.  
 (c) [@joenorton](https://twitter.com/joenorton)
