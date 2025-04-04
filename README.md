@@ -12,8 +12,10 @@
 
 ## 🧪 Try It Out
 
-**GitHub Pages:**  
-Coming soon — or host it locally:
+**GitHub Pages:** 
+Try it out here:  https://joenorton.github.io/contextsmash/
+
+— or host it locally:
 
 ```bash
 git clone https://github.com/joenorton/contextsmash.git
