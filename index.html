@@ -9,7 +9,10 @@
 </head>
 <body x-data="app">
     <header class="main-header">
-        <h1>ContextSmash</h1>
+        <div class="header-content">
+            <h1>ContextSmash</h1>
+            <button @click="showSettingsDialog = true" class="settings-button" title="Settings">⚙️</button>
+        </div>
     </header>
 
     <nav class="menu-bar">
@@ -103,7 +106,7 @@
                 <div class="file-list">
                     <template x-for="file in $store.files" :key="file.name">
                         <div class="file-item">
-                            <div class="file-info" @click="selectedFile = file; newAlias = getAliasForFile(file)">
+                            <div class="file-info" @click="selectedFile = file; newAlias = getAliasForFile(file).slice(2, -2)">
                                 <span x-text="file.name"></span>
                                 <span class="file-size" x-text="formatFileSize(file.size)"></span>
                                 <span class="file-alias" x-text="getAliasForFile(file)"></span>
@@ -127,15 +130,63 @@
             <!-- Symbol Map Section -->
             <div class="symbol-map">
                 <h2>Symbol Map</h2>
+                <!-- New Manual Alias Input -->
+                <div class="manual-alias-input">
+                    <h3>Add Manual Alias</h3>
+                    <div class="input-group">
+                        <input 
+                            type="text" 
+                            x-model="newManualAlias" 
+                            placeholder="Alias (e.g., SEPP)"
+                            @keyup.enter="addManualAlias"
+                        >
+                        <textarea 
+                            x-model="newManualValue" 
+                            placeholder="Value (e.g., ---)"
+                            rows="3"
+                        ></textarea>
+                        <button @click="addManualAlias">Add Alias</button>
+                    </div>
+                </div>
                 <div class="alias-list">
                     <template x-if="Object.keys($store.aliases).length === 0">
                         <div class="empty-state">No aliases assigned yet</div>
                     </template>
                     <template x-for="(content, alias) in $store.aliases" :key="alias">
                         <div class="alias-item">
-                            <span class="alias-name" x-text="alias"></span>
-                            <span class="alias-file" x-text="getFileNameForContent(content)"></span>
-                            <button @click="deleteAlias(alias)" class="delete-button">×</button>
+                            <!-- Regular view mode -->
+                            <div x-show="editingAlias !== alias" class="alias-item-content">
+                                <span class="alias-name" x-text="alias"></span>
+                                <span class="alias-file" x-text="isFileAlias(content) ? getFileNameForContent(content) : 'Manual'"></span>
+                                <div class="alias-actions">
+                                    <button 
+                                        x-show="!isFileAlias(content)" 
+                                        @click="startEditingAlias(alias, content)" 
+                                        class="edit-button"
+                                        title="Edit alias"
+                                    >✎</button>
+                                    <button @click="deleteAlias(alias)" class="delete-button" title="Delete alias">×</button>
+                                </div>
+                            </div>
+                            <!-- Edit mode -->
+                            <div x-show="editingAlias === alias" class="alias-edit-form">
+                                <div class="input-group">
+                                    <input 
+                                        type="text" 
+                                        x-model="editingAliasName" 
+                                        placeholder="Alias name"
+                                    >
+                                    <textarea 
+                                        x-model="editingAliasValue" 
+                                        placeholder="Value"
+                                        rows="3"
+                                    ></textarea>
+                                    <div class="edit-actions">
+                                        <button @click="saveEditingAlias()" class="save-button">Save</button>
+                                        <button @click="cancelEditingAlias()" class="cancel-button">Cancel</button>
+                                    </div>
+                                </div>
+                            </div>
                         </div>
                     </template>
                 </div>
@@ -146,28 +197,55 @@
                 <!-- Raw Prompt Editor -->
                 <div class="editor-section">
                     <h2>Raw Prompt</h2>
-                    <div class="prompt-editor"
-                        contenteditable="true"
-                        x-html="formatRawPrompt()"
-                        @input="handleRawPromptInput($event)"
-                        @keydown.enter.prevent
-                    ></div>
+                    <div class="raw-prompt-container">
+                        <div class="raw-prompt-input-container">
+                            <label for="raw-prompt-input">Input</label>
+                            <textarea 
+                                id="raw-prompt-input"
+                                x-model="$store.rawPrompt" 
+                                placeholder="Type your prompt here (e.g., Using {{vault}}...)"
+                                class="raw-prompt-input"
+                            ></textarea>
+                        </div>
+                        <div class="raw-prompt-preview-container">
+                            <label>Preview</label>
+                            <div 
+                                x-html="formatRawPrompt()" 
+                                class="raw-prompt-preview"
+                            ></div>
+                        </div>
+                    </div>
                 </div>
 
                 <!-- Final Prompt Viewer -->
-                <div class="viewer-section">
-                    <div class="viewer-header">
-                        <h2>Final Prompt</h2>
-                        <div class="viewer-actions">
-                            <button @click="copyToClipboard" class="icon-button" title="Copy to Clipboard">📋</button>
-                            <button @click="saveToFile" class="icon-button" title="Save to File">💾</button>
-                        </div>
+                <div class="editor-section">
+                    <h2>Final Prompt</h2>
+                    <div class="final-prompt-container">
+                        <template x-if="formatFinalPrompt()">
+                            <div class="final-prompt-content">
+                                <div class="final-prompt-header">
+                                    <div class="prompt-stats">
+                                        <span x-text="`${Alpine.store('finalPrompt').length} chars`"></span>
+                                        <span x-text="`~${Math.ceil(Alpine.store('finalPrompt').length / 4)} tokens`"></span>
+                                    </div>
+                                    <div class="prompt-actions">
+                                        <button title="Copy to Clipboard" @click="copyToClipboard()">📋</button>
+                                        <button title="Save to File" @click="saveToFile()">💾</button>
+                                    </div>
+                                </div>
+                                <div x-html="formatFinalPrompt()" class="final-prompt-viewer"></div>
+                            </div>
+                        </template>
+                        <template x-if="!formatFinalPrompt()">
+                            <div class="final-prompt-error">
+                                <div class="error-icon">⚠️</div>
+                                <div class="error-message">
+                                    <h3>Invalid Aliases Detected</h3>
+                                    <p>Check your Raw Prompt for any misspelled or undefined aliases (highlighted in red).</p>
+                                </div>
+                            </div>
+                        </template>
                     </div>
-                    <div class="prompt-meta">
-                        <span>Characters: <span x-text="$store.finalPrompt.length"></span></span>
-                        <span>Tokens (est): <span x-text="Math.ceil($store.finalPrompt.length / 4)"></span></span>
-                    </div>
-                    <div class="prompt-viewer" x-html="formatFinalPrompt()"></div>
                 </div>
             </div>
         </div>
@@ -176,5 +254,30 @@
         <p class="attribution">Created by <a href="https://github.com/joenorton" target="_blank">@joenorton</a></p>
     </footer>
     <script src="app.js"></script>
+
+    <!-- Settings Dialog -->
+    <div class="dialog-overlay" x-show="showSettingsDialog" style="display: none;">
+        <div class="dialog settings-dialog">
+            <h3>Settings</h3>
+            <div class="dialog-content">
+                <div class="settings-option">
+                    <label>Theme</label>
+                    <div class="theme-toggle">
+                        <button 
+                            @click="setTheme('light')" 
+                            :class="{ active: $store.settings.theme === 'light' }"
+                        >Light</button>
+                        <button 
+                            @click="setTheme('dark')" 
+                            :class="{ active: $store.settings.theme === 'dark' }"
+                        >Dark</button>
+                    </div>
+                </div>
+            </div>
+            <div class="dialog-actions">
+                <button @click="showSettingsDialog = false" class="dialog-button">Close</button>
+            </div>
+        </div>
+    </div>
 </body>
 </html> 

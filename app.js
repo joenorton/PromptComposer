@@ -6,6 +6,12 @@ document.addEventListener('alpine:init', () => {
     Alpine.store('rawPrompt', localStorage.getItem('rawPrompt') || '');
     Alpine.store('finalPrompt', localStorage.getItem('finalPrompt') || '');
     Alpine.store('notifications', []);
+    Alpine.store('settings', JSON.parse(localStorage.getItem('settings')) || {
+        theme: 'light'
+    });
+
+    // Apply theme from settings
+    document.documentElement.setAttribute('data-theme', Alpine.store('settings').theme);
 
     // Define the main app component
     Alpine.data('app', () => ({
@@ -15,53 +21,139 @@ document.addEventListener('alpine:init', () => {
         filename: 'prompt.txt',
         showWorkflowSaveDialog: false,
         workflowFilename: 'contextsmash-workflow.json',
+        showSettingsDialog: false,
+        // Properties for manual aliases
+        newManualAlias: '',
+        newManualValue: '',
+        // Properties for editing aliases
+        editingAlias: null,
+        editingAliasName: '',
+        editingAliasValue: '',
 
         // Format raw prompt with colored aliases
         formatRawPrompt() {
             const rawPrompt = Alpine.store('rawPrompt');
+            if (!rawPrompt) return '';
+            
             const aliases = Alpine.store('aliases');
-            let result = rawPrompt;
             
             // Find all alias patterns
             const aliasPattern = /{{([^}]+)}}/g;
             const matches = [...rawPrompt.matchAll(aliasPattern)];
             
-            // Replace each alias with colored content
-            matches.forEach(match => {
-                const [fullMatch, alias] = match;
-                const content = aliases[alias];
-                if (content) {
-                    // Valid alias - color it green
-                    result = result.replace(fullMatch, `<span class="valid-alias">${fullMatch}</span>`);
+            // Only format if we found aliases
+            if (matches.length === 0) return this.escapeHtml(rawPrompt);
+            
+            // Track which aliases we've seen
+            const seenAliases = new Set();
+            
+            // Create a list of replacements to apply in order
+            const replacements = matches.map(match => {
+                const [fullMatch, aliasInner] = match;
+                const aliasKey = `{{${aliasInner}}}`;
+                const index = match.index;
+                
+                if (aliases[aliasKey]) {
+                    if (seenAliases.has(aliasKey)) {
+                        // This is a subsequent match
+                        return {
+                            index,
+                            length: fullMatch.length,
+                            replacement: `<span class="subsequent-alias">${this.escapeHtml(fullMatch)}</span>`
+                        };
+                    } else {
+                        // This is the first match
+                        seenAliases.add(aliasKey);
+                        return {
+                            index,
+                            length: fullMatch.length,
+                            replacement: `<span class="valid-alias">${this.escapeHtml(fullMatch)}</span>`
+                        };
+                    }
                 } else {
-                    // Invalid alias - color it red
-                    result = result.replace(fullMatch, `<span class="invalid-alias">${fullMatch}</span>`);
+                    return {
+                        index,
+                        length: fullMatch.length,
+                        replacement: `<span class="invalid-alias">${this.escapeHtml(fullMatch)}</span>`
+                    };
                 }
             });
             
-            return result;
+            // Apply replacements from last to first to maintain indices
+            let result = rawPrompt;
+            replacements.sort((a, b) => b.index - a.index).forEach(({ index, length, replacement }) => {
+                result = result.slice(0, index) + replacement + result.slice(index + length);
+            });
+            
+            return this.escapeHtml(result)
+                .replace(/&lt;span class="(valid|invalid|subsequent)-alias"&gt;/g, '<span class="$1-alias">')
+                .replace(/&lt;\/span&gt;/g, '</span>');
+        },
+
+        // Helper function to escape HTML
+        escapeHtml(text) {
+            const div = document.createElement('div');
+            div.textContent = text;
+            return div.innerHTML;
         },
 
         // Handle raw prompt input
         handleRawPromptInput(event) {
             const editor = event.target;
-            const text = editor.innerText;
-            Alpine.store('rawPrompt', text);
+            const text = editor.innerText || editor.textContent;
             
-            // Update the content with colored aliases
-            requestAnimationFrame(() => {
-                const formatted = this.formatRawPrompt();
-                if (formatted !== editor.innerHTML) {
-                    editor.innerHTML = formatted;
-                    // Move cursor to end
-                    const range = document.createRange();
-                    const sel = window.getSelection();
-                    range.selectNodeContents(editor);
-                    range.collapse(false);
-                    sel.removeAllRanges();
-                    sel.addRange(range);
+            if (Alpine.store('rawPrompt') !== text) {
+                Alpine.store('rawPrompt', text);
+            }
+        
+            if (this.formatDebounceTimer) {
+                clearTimeout(this.formatDebounceTimer);
+            }
+        
+            this.formatDebounceTimer = setTimeout(() => {
+                const selection = window.getSelection();
+                let range = selection.rangeCount ? selection.getRangeAt(0) : null;
+                let cursorOffset = 0;
+        
+                if (range) {
+                    // Get cursor position in plain text terms
+                    const preCaretRange = range.cloneRange();
+                    preCaretRange.selectNodeContents(editor);
+                    preCaretRange.setEnd(range.startContainer, range.startOffset);
+                    cursorOffset = preCaretRange.toString().length; // Count characters before cursor
                 }
-            });
+        
+                const formatted = this.formatRawPrompt();
+                
+                if (formatted && formatted !== editor.innerHTML) {
+                    editor.innerHTML = formatted;
+        
+                    if (range) {
+                        // Restore cursor based on character count
+                        let charCount = 0;
+                        const walk = document.createTreeWalker(editor, NodeFilter.SHOW_TEXT);
+                        let targetNode = null;
+                        let targetOffset = 0;
+        
+                        while (targetNode = walk.nextNode()) {
+                            const nodeLength = targetNode.length;
+                            if (charCount + nodeLength >= cursorOffset) {
+                                targetOffset = cursorOffset - charCount;
+                                break;
+                            }
+                            charCount += nodeLength;
+                        }
+        
+                        if (targetNode) {
+                            const newRange = document.createRange();
+                            newRange.setStart(targetNode, Math.min(targetOffset, targetNode.length));
+                            newRange.collapse(true);
+                            selection.removeAllRanges();
+                            selection.addRange(newRange);
+                        }
+                    }
+                }
+            }, 200); // Slightly longer debounce for stability
         },
 
         // Format final prompt with colored aliases
@@ -77,8 +169,9 @@ document.addEventListener('alpine:init', () => {
             
             // Check for invalid aliases
             matches.forEach(match => {
-                const [fullMatch, alias] = match;
-                if (!aliases[alias]) {
+                const [fullMatch, aliasInner] = match;
+                // Check if the full match exists in aliases
+                if (!aliases[fullMatch]) {
                     hasInvalidAlias = true;
                 }
             });
@@ -90,8 +183,8 @@ document.addEventListener('alpine:init', () => {
             
             // Replace each alias with its content
             matches.forEach(match => {
-                const [fullMatch, alias] = match;
-                const content = aliases[alias];
+                const [fullMatch] = match;
+                const content = aliases[fullMatch];
                 if (content) {
                     result = result.replace(fullMatch, content);
                 }
@@ -179,9 +272,24 @@ document.addEventListener('alpine:init', () => {
                         Alpine.store('rawPrompt', '');
                         Alpine.store('finalPrompt', '');
 
-                        // Load new workflow
+                        // Load files first
                         Alpine.store('files', workflow.files);
-                        Alpine.store('aliases', workflow.aliases);
+
+                        // Load aliases, validating file-based ones
+                        const validatedAliases = {};
+                        Object.entries(workflow.aliases).forEach(([alias, content]) => {
+                            // Check if this is a file-based alias
+                            const isFileAlias = workflow.files.some(f => f.content === content);
+                            
+                            // Only keep the alias if:
+                            // 1. It's a manual alias (not file-based), OR
+                            // 2. It's a file-based alias and the file exists in the workflow
+                            if (!isFileAlias || (isFileAlias && workflow.files.some(f => f.content === content))) {
+                                validatedAliases[alias] = content;
+                            }
+                        });
+
+                        Alpine.store('aliases', validatedAliases);
                         Alpine.store('rawPrompt', workflow.rawPrompt);
                         Alpine.store('finalPrompt', workflow.finalPrompt);
 
@@ -227,7 +335,7 @@ document.addEventListener('alpine:init', () => {
         getAliasForFile(file) {
             const aliases = Alpine.store('aliases');
             const alias = Object.entries(aliases).find(([_, content]) => content === file.content);
-            return alias ? '{{' + alias[0] + '}}' : '';
+            return alias ? alias[0] : '';  // alias[0] is already in {{name}} format since that's how we store it
         },
 
         showNotification(message, type = 'info') {
@@ -253,6 +361,8 @@ document.addEventListener('alpine:init', () => {
                         const content = e.target.result;
                         // Get filename without extension for alias
                         const alias = file.name.replace(/\.[^/.]+$/, "");
+                        // Add brackets to alias
+                        const normalizedAlias = `{{${alias}}}`;
                         
                         // Store file content and metadata
                         const currentFiles = Alpine.store('files');
@@ -266,11 +376,11 @@ document.addEventListener('alpine:init', () => {
                             }
                         ]);
                         
-                        // Automatically assign alias
+                        // Automatically assign alias with brackets
                         const currentAliases = Alpine.store('aliases');
                         Alpine.store('aliases', {
                             ...currentAliases,
-                            [alias]: content
+                            [normalizedAlias]: content
                         });
                         
                         this.saveState(); // Save after adding file
@@ -314,9 +424,13 @@ document.addEventListener('alpine:init', () => {
                 return;
             }
             
+            // Normalize alias to {{alias}} format if not already
+            const normalizedAlias = this.newAlias.startsWith('{{') && this.newAlias.endsWith('}}') ? 
+                this.newAlias : `{{${this.newAlias}}}`;
+            
             // Check if alias already exists
             const currentAliases = Alpine.store('aliases');
-            if (currentAliases[this.newAlias] && currentAliases[this.newAlias] !== file.content) {
+            if (currentAliases[normalizedAlias] && currentAliases[normalizedAlias] !== file.content) {
                 this.showNotification('Alias already exists', 'error');
                 return;
             }
@@ -324,7 +438,7 @@ document.addEventListener('alpine:init', () => {
             // Update aliases store
             Alpine.store('aliases', {
                 ...currentAliases,
-                [this.newAlias]: file.content
+                [normalizedAlias]: file.content
             });
             
             // Clear input and selection
@@ -383,6 +497,95 @@ document.addEventListener('alpine:init', () => {
             this.showNotification('File saved', 'success');
         },
 
+        // Add manual alias
+        addManualAlias() {
+            const alias = this.newManualAlias.trim();
+            const value = this.newManualValue.trim();
+
+            if (!alias || !value) {
+                this.showNotification('Alias and value are required', 'error');
+                return;
+            }
+
+            // Normalize alias to {{alias}} format if not already
+            const normalizedAlias = alias.startsWith('{{') && alias.endsWith('}}') ? alias : `{{${alias}}}`;
+            const currentAliases = Alpine.store('aliases');
+
+            if (currentAliases[normalizedAlias] && currentAliases[normalizedAlias] !== value) {
+                this.showNotification('Alias already exists with different value', 'error');
+                return;
+            }
+
+            Alpine.store('aliases', {
+                ...currentAliases,
+                [normalizedAlias]: value
+            });
+
+            this.newManualAlias = '';
+            this.newManualValue = '';
+            this.saveState();
+            this.showNotification('Manual alias added', 'success');
+        },
+
+        // Check if an alias is file-based
+        isFileAlias(content) {
+            const files = Alpine.store('files');
+            return files.some(f => f.content === content);
+        },
+
+        // Start editing an alias
+        startEditingAlias(alias, content) {
+            this.editingAlias = alias;
+            // Remove {{ and }} from alias for editing
+            this.editingAliasName = alias.slice(2, -2);
+            this.editingAliasValue = content;
+        },
+
+        // Save edited alias
+        saveEditingAlias() {
+            const oldAlias = this.editingAlias;
+            const newAlias = this.editingAliasName.trim();
+            const newValue = this.editingAliasValue.trim();
+
+            if (!newAlias || !newValue) {
+                this.showNotification('Alias and value are required', 'error');
+                return;
+            }
+
+            // Normalize new alias to {{alias}} format
+            const normalizedNewAlias = newAlias.startsWith('{{') && newAlias.endsWith('}}') ? 
+                newAlias : `{{${newAlias}}}`;
+
+            // Check if we're trying to change to an existing alias
+            const currentAliases = Alpine.store('aliases');
+            if (normalizedNewAlias !== oldAlias && currentAliases[normalizedNewAlias]) {
+                this.showNotification('Alias already exists', 'error');
+                return;
+            }
+
+            // Create new aliases object with the updated alias
+            const newAliases = { ...currentAliases };
+            delete newAliases[oldAlias];
+            newAliases[normalizedNewAlias] = newValue;
+
+            // Update the store
+            Alpine.store('aliases', newAliases);
+            
+            // Clear editing state
+            this.cancelEditingAlias();
+            
+            // Save and notify
+            this.saveState();
+            this.showNotification('Alias updated', 'success');
+        },
+
+        // Cancel editing
+        cancelEditingAlias() {
+            this.editingAlias = null;
+            this.editingAliasName = '';
+            this.editingAliasValue = '';
+        },
+
         init() {
             // Set up drag and drop handlers
             const uploadArea = document.querySelector('.upload-area');
@@ -402,7 +605,19 @@ document.addEventListener('alpine:init', () => {
                 const files = e.dataTransfer.files;
                 this.handleFiles({ target: { files } });
             });
-        }
+        },
+
+        // Theme switching
+        setTheme(theme) {
+            Alpine.store('settings').theme = theme;
+            document.documentElement.setAttribute('data-theme', theme);
+            this.saveSettings();
+        },
+
+        // Save settings to localStorage
+        saveSettings() {
+            localStorage.setItem('settings', JSON.stringify(Alpine.store('settings')));
+        },
     }));
 });
 
@@ -415,7 +630,8 @@ document.addEventListener('alpine:init', () => {
         // Replace aliases with their content
         let finalPrompt = rawPrompt;
         for (const [alias, content] of Object.entries(aliases)) {
-            const regex = new RegExp(`{{${alias}}}`, 'g');
+            // Use the full alias (which already includes {{}})
+            const regex = new RegExp(alias.replace(/[.*+?^${}()|[\]\\]/g, '\\$&'), 'g');
             finalPrompt = finalPrompt.replace(regex, content);
         }
         
