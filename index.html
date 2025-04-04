@@ -61,7 +61,7 @@
                 <div class="file-list">
                     <template x-for="file in $store.files" :key="file.name">
                         <div class="file-item">
-                            <div class="file-info" @click="selectedFile = file">
+                            <div class="file-info" @click="selectedFile = file; newAlias = getAliasForFile(file)">
                                 <span x-text="file.name"></span>
                                 <span class="file-size" x-text="formatFileSize(file.size)"></span>
                                 <span class="file-alias" x-text="getAliasForFile(file)"></span>

@@ -32,7 +32,7 @@ document.addEventListener('alpine:init', () => {
         getAliasForFile(file) {
             const aliases = Alpine.store('aliases');
             const alias = Object.entries(aliases).find(([_, content]) => content === file.content);
-            return alias ? `({{${alias[0]}}})` : '';
+            return alias ? '{{' + alias[0] + '}}' : '';
         },
 
         showNotification(message, type = 'info') {
@@ -119,7 +119,7 @@ document.addEventListener('alpine:init', () => {
             
             // Check if alias already exists
             const currentAliases = Alpine.store('aliases');
-            if (currentAliases[this.newAlias]) {
+            if (currentAliases[this.newAlias] && currentAliases[this.newAlias] !== file.content) {
                 this.showNotification('Alias already exists', 'error');
                 return;
             }
