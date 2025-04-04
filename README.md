@@ -12,8 +12,10 @@
 
 ## 🧪 Try It Out
 
-**GitHub Pages:**  
-Coming soon — or host it locally:
+**GitHub Pages:** 
+Try it out here:  https://joenorton.github.io/contextsmash/
+
+— or host it locally:
 
 ```bash
 git clone https://github.com/joenorton/contextsmash.git
@@ -36,13 +38,6 @@ index.html      → main UI
 app.js          → logic & state (Alpine.js)
 styles.css      → minimal, clean styling
 ```
-
-## 🚀 Deployment
-
-To deploy via GitHub Pages:
-1. Push code to `main`
-2. In repo settings → Pages → select root of `main` as source
-3. Visit: `https://yourusername.github.io/contextsmash/`
 
 ## 📜 License
 
