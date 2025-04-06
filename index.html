@@ -208,6 +208,19 @@
             <!-- Raw Prompt Editor -->
             <div class="raw-prompt-container">
                 <h2>Raw Prompt</h2>
+                <!-- Quick Add Buttons -->
+                <div class="quick-add-buttons">
+                    <h3>Quick Add Symbols</h3>
+                    <div class="quick-add-grid">
+                        <template x-for="(content, alias) in $store.aliases">
+                            <button 
+                                class="quick-add-button"
+                                @click="insertSymbol(alias)"
+                                x-text="alias"
+                            ></button>
+                        </template>
+                    </div>
+                </div>
                 <div class="raw-prompt-input-container">
                     <label for="raw-prompt-input">Input</label>
                     <textarea 
@@ -241,7 +254,7 @@
                                 <button title="Save to File" @click="saveToFile()">💾</button>
                             </div>
                         </div>
-                        <div x-html="formatFinalPrompt()" class="final-prompt-viewer"></div>
+                        <div class="final-prompt-viewer" x-html="formatFinalPrompt()"></div>
                     </div>
                 </template>
                 <template x-if="!formatFinalPrompt()">

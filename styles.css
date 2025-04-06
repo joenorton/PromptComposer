@@ -323,6 +323,10 @@ body {
     background: #f9f9f9;
     border: 1px solid #ddd;
     border-radius: 4px;
+    user-select: text;
+    -webkit-user-select: text;
+    -moz-user-select: text;
+    -ms-user-select: text;
 }
 
 .final-prompt-error {
@@ -644,6 +648,10 @@ body {
     word-wrap: break-word;
     word-break: break-word;
     max-width: 100%;
+    user-select: text;
+    -webkit-user-select: text;
+    -moz-user-select: text;
+    -ms-user-select: text;
 }
 
 .prompt-actions {
@@ -963,10 +971,13 @@ body {
 }
 
 [data-theme="dark"] .file-item,
-[data-theme="dark"] .raw-prompt-preview,
 [data-theme="dark"] .prompt-actions,
 [data-theme="dark"] .final-prompt-header {
     background: var(--input-bg);
+}
+
+[data-theme="dark"] .raw-prompt-preview {
+    background: var(--card-bg);
 }
 
 [data-theme="dark"] .raw-prompt-container,
@@ -998,6 +1009,10 @@ body {
 [data-theme="dark"] .final-prompt-viewer pre {
     color: #f0f0f0;
     background: var(--input-bg);
+    user-select: text;
+    -webkit-user-select: text;
+    -moz-user-select: text;
+    -ms-user-select: text;
 }
 
 [data-theme="dark"] .file-input-label {
@@ -1011,4 +1026,65 @@ body {
 
 [data-theme="dark"] .upload-area:hover {
     border-color: #666;
+}
+
+/* Quick Add Buttons */
+.quick-add-buttons {
+    margin-bottom: 1rem;
+    background: #f8f9fa;
+    border-radius: 8px;
+    padding: 1rem;
+    border: 1px solid #ddd;
+}
+
+.quick-add-buttons h3 {
+    font-size: 1rem;
+    color: #666;
+    margin: 0 0 0.5rem 0;
+}
+
+.quick-add-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(120px, 1fr));
+    gap: 0.5rem;
+}
+
+.quick-add-button {
+    padding: 0.5rem;
+    background: white;
+    border: 1px solid #ddd;
+    border-radius: 4px;
+    font-family: monospace;
+    font-size: 0.9rem;
+    color: #2ecc71;
+    cursor: pointer;
+    transition: all 0.3s ease;
+    text-align: center;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+
+.quick-add-button:hover {
+    background: #f0f0f0;
+    border-color: #2ecc71;
+    color: #27ae60;
+}
+
+/* Dark mode overrides for quick-add buttons */
+[data-theme="dark"] .quick-add-buttons {
+    background: var(--input-bg);
+    border-color: var(--border-color);
+}
+
+[data-theme="dark"] .quick-add-button {
+    background: var(--card-bg);
+    border-color: var(--border-color);
+    color: #2ecc71;
+}
+
+[data-theme="dark"] .quick-add-button:hover {
+    background: var(--input-bg);
+    border-color: #2ecc71;
+    color: #27ae60;
 }

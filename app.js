@@ -156,6 +156,57 @@ document.addEventListener('alpine:init', () => {
             }, 200); // Slightly longer debounce for stability
         },
 
+        // Insert symbol at cursor position
+        insertSymbol(alias) {
+            const editor = document.getElementById('raw-prompt-input');
+            const currentText = Alpine.store('rawPrompt') || '';
+            const selection = window.getSelection();
+            const range = selection.rangeCount ? selection.getRangeAt(0) : null;
+            
+            if (range) {
+                // Get cursor position
+                const preCaretRange = range.cloneRange();
+                preCaretRange.selectNodeContents(editor);
+                preCaretRange.setEnd(range.startContainer, range.startOffset);
+                const cursorOffset = preCaretRange.toString().length;
+                
+                // Insert symbol at cursor position
+                const newText = currentText.slice(0, cursorOffset) + alias + currentText.slice(cursorOffset);
+                Alpine.store('rawPrompt', newText);
+                
+                // Update editor content
+                editor.innerHTML = this.formatRawPrompt();
+                
+                // Move cursor after inserted symbol
+                const newCursorPos = cursorOffset + alias.length;
+                const walk = document.createTreeWalker(editor, NodeFilter.SHOW_TEXT);
+                let charCount = 0;
+                let targetNode = null;
+                let targetOffset = 0;
+                
+                while (targetNode = walk.nextNode()) {
+                    const nodeLength = targetNode.length;
+                    if (charCount + nodeLength >= newCursorPos) {
+                        targetOffset = newCursorPos - charCount;
+                        break;
+                    }
+                    charCount += nodeLength;
+                }
+                
+                if (targetNode) {
+                    const newRange = document.createRange();
+                    newRange.setStart(targetNode, Math.min(targetOffset, targetNode.length));
+                    newRange.collapse(true);
+                    selection.removeAllRanges();
+                    selection.addRange(newRange);
+                }
+            } else {
+                // If no selection, append to end
+                Alpine.store('rawPrompt', currentText + alias);
+                editor.innerHTML = this.formatRawPrompt();
+            }
+        },
+
         // Format final prompt with colored aliases
         formatFinalPrompt() {
             const rawPrompt = Alpine.store('rawPrompt');
@@ -190,7 +241,7 @@ document.addEventListener('alpine:init', () => {
                 }
             });
             
-            // Escape HTML characters and wrap in pre tag
+            // Escape HTML characters
             result = result
                 .replace(/&/g, '&amp;')
                 .replace(/</g, '&lt;')
@@ -198,7 +249,7 @@ document.addEventListener('alpine:init', () => {
                 .replace(/"/g, '&quot;')
                 .replace(/'/g, '&#039;');
             
-            return `<pre>${result}</pre>`;
+            return result;
         },
 
         // Save state to localStorage
