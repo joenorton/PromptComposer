@@ -100,12 +100,16 @@
         </div>
 
         <div class="main-content">
-            <!-- File Picker Section -->
-            <div class="file-picker">
-                <h2>File Picker</h2>
+            <!-- Symbol Map Section -->
+            <div class="symbol-map">
+                <div class="symbol-map-header">
+                    <h2>Symbol Map</h2>
+                    <button @click="openAliasDialog()" class="add-alias-button" title="Add Manual Alias">+</button>
+                </div>
+                <!-- Combined Upload Area -->
                 <div class="upload-area">
                     <label for="file-input" class="file-input-label">
-                        <span>Click to select files</span>
+                        <span>Click to upload files</span>
                         <input 
                             type="file" 
                             multiple 
@@ -116,92 +120,58 @@
                     </label>
                     <p>or drag and drop files here</p>
                 </div>
-                <div class="file-list">
-                    <template x-for="file in $store.files" :key="file.name">
-                        <div class="file-item">
-                            <div class="file-info" @click="selectedFile = file; newAlias = getAliasForFile(file).slice(2, -2)">
-                                <span x-text="file.name"></span>
-                                <span class="file-size" x-text="formatFileSize(file.size)"></span>
-                                <span class="file-alias" x-text="getAliasForFile(file)"></span>
-                                <span class="edit-icon">✏️</span>
-                            </div>
-                            <button @click="removeFile(file)" class="delete-button">×</button>
-                            <div class="alias-input" x-show="selectedFile === file">
-                                <input 
-                                    type="text" 
-                                    x-model="newAlias" 
-                                    placeholder="Enter alias (e.g., vault)"
-                                    @keyup.enter="assignAlias(file)"
-                                >
-                                <button @click="assignAlias(file)">Assign Alias</button>
+                <div class="alias-list">
+                    <template x-if="Object.keys($store.aliases).length === 0">
+                        <div class="empty-state">No aliases assigned yet</div>
+                    </template>
+                    <template x-for="(content, alias) in $store.aliases" :key="alias">
+                        <div class="alias-item" :class="{ 'file-based': isFileAlias(content), 'editing': editingAlias === alias }">
+                            <div class="alias-item-content">
+                                <span class="alias-name" x-text="alias"></span>
+                                <span class="alias-info" 
+                                      x-text="isFileAlias(content) ? getFileNameForContent(content) + ' (' + formatFileSize($store.files.find(f => f.content === content)?.size || 0) + ')' : 'Manual'"></span>
+                                <div class="alias-actions">
+                                    <button x-show="!isFileAlias(content)" 
+                                            @click="startEditingAlias(alias, content)" 
+                                            class="edit-button"
+                                            title="Edit alias">✎</button>
+                                    <button @click="deleteAlias(alias)" 
+                                            class="delete-button"
+                                            title="Delete alias">×</button>
+                                </div>
                             </div>
                         </div>
                     </template>
                 </div>
             </div>
 
-            <!-- Symbol Map Section -->
-            <div class="symbol-map">
-                <h2>Symbol Map</h2>
-                <!-- New Manual Alias Input -->
-                <div class="manual-alias-input">
-                    <h3>Add Manual Alias</h3>
-                    <div class="input-group">
-                        <input 
-                            type="text" 
-                            x-model="newManualAlias" 
-                            placeholder="Alias (e.g., SEPP)"
-                            @keyup.enter="addManualAlias"
-                        >
-                        <textarea 
-                            x-model="newManualValue" 
-                            placeholder="Value (e.g., ---)"
-                            rows="3"
-                        ></textarea>
-                        <button @click="addManualAlias">Add Alias</button>
-                    </div>
-                </div>
-                <div class="alias-list">
-                    <template x-if="Object.keys($store.aliases).length === 0">
-                        <div class="empty-state">No aliases assigned yet</div>
-                    </template>
-                    <template x-for="(content, alias) in $store.aliases" :key="alias">
-                        <div class="alias-item">
-                            <!-- Regular view mode -->
-                            <div x-show="editingAlias !== alias" class="alias-item-content">
-                                <span class="alias-name" x-text="alias"></span>
-                                <span class="alias-file" x-text="isFileAlias(content) ? getFileNameForContent(content) : 'Manual'"></span>
-                                <div class="alias-actions">
-                                    <button 
-                                        x-show="!isFileAlias(content)" 
-                                        @click="startEditingAlias(alias, content)" 
-                                        class="edit-button"
-                                        title="Edit alias"
-                                    >✎</button>
-                                    <button @click="deleteAlias(alias)" class="delete-button" title="Delete alias">×</button>
-                                </div>
-                            </div>
-                            <!-- Edit mode -->
-                            <div x-show="editingAlias === alias" class="alias-edit-form">
-                                <div class="input-group">
-                                    <input 
-                                        type="text" 
-                                        x-model="editingAliasName" 
-                                        placeholder="Alias name"
-                                    >
-                                    <textarea 
-                                        x-model="editingAliasValue" 
-                                        placeholder="Value"
-                                        rows="3"
-                                    ></textarea>
-                                    <div class="edit-actions">
-                                        <button @click="saveEditingAlias()" class="save-button">Save</button>
-                                        <button @click="cancelEditingAlias()" class="cancel-button">Cancel</button>
-                                    </div>
-                                </div>
-                            </div>
+            <!-- Alias Dialog -->
+            <div class="dialog-overlay" x-show="showAliasDialog" style="display: none;">
+                <div class="dialog">
+                    <h3 x-text="editingAlias ? 'Edit Alias' : 'Add Manual Alias'"></h3>
+                    <div class="dialog-content">
+                        <div class="input-group">
+                            <label for="alias-name-input">Alias:</label>
+                            <input 
+                                type="text" 
+                                id="alias-name-input"
+                                x-model="editingAliasName" 
+                                placeholder="Enter alias (e.g., SEPP)"
+                                @keyup.enter="saveAlias"
+                            >
+                            <label for="alias-value-input">Value:</label>
+                            <textarea 
+                                id="alias-value-input"
+                                x-model="editingAliasValue" 
+                                placeholder="Enter value"
+                                rows="5"
+                            ></textarea>
                         </div>
-                    </template>
+                    </div>
+                    <div class="dialog-actions">
+                        <button @click="cancelAliasEdit" class="dialog-button">Cancel</button>
+                        <button @click="saveAlias" class="dialog-button primary">Save</button>
+                    </div>
                 </div>
             </div>
 

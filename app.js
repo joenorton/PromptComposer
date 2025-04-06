@@ -15,20 +15,18 @@ document.addEventListener('alpine:init', () => {
 
     // Define the main app component
     Alpine.data('app', () => ({
-        newAlias: '',
-        selectedFile: null,
-        showFilenameDialog: false,
         filename: 'prompt.txt',
+        showFilenameDialog: false,
+        newAlias: '',
         showWorkflowSaveDialog: false,
         workflowFilename: 'contextsmash-workflow.json',
         showSettingsDialog: false,
-        // Properties for manual aliases
-        newManualAlias: '',
-        newManualValue: '',
-        // Properties for editing aliases
         editingAlias: null,
         editingAliasName: '',
         editingAliasValue: '',
+        newManualAlias: '',
+        newManualValue: '',
+        showAliasDialog: false,
 
         // Format raw prompt with colored aliases
         formatRawPrompt() {
@@ -403,110 +401,43 @@ document.addEventListener('alpine:init', () => {
         // File handling
         handleFiles(event) {
             const files = Array.from(event.target.files);
-            
             files.forEach(file => {
                 const reader = new FileReader();
-                
                 reader.onload = (e) => {
-                    try {
-                        const content = e.target.result;
-                        // Get filename without extension for alias
-                        const alias = file.name.replace(/\.[^/.]+$/, "");
-                        // Add brackets to alias
-                        const normalizedAlias = `{{${alias}}}`;
-                        
-                        // Store file content and metadata
-                        const currentFiles = Alpine.store('files');
-                        Alpine.store('files', [
-                            ...currentFiles,
-                            {
-                                name: file.name,
-                                content,
-                                type: file.type,
-                                size: file.size
-                            }
-                        ]);
-                        
-                        // Automatically assign alias with brackets
-                        const currentAliases = Alpine.store('aliases');
-                        Alpine.store('aliases', {
-                            ...currentAliases,
-                            [normalizedAlias]: content
-                        });
-                        
-                        this.saveState(); // Save after adding file
-                        this.showNotification(`File uploaded: ${file.name}`, 'success');
-                    } catch (err) {
-                        console.error('Error reading file:', err);
-                        this.showNotification(`Error reading file: ${file.name}`, 'error');
-                    }
+                    const content = e.target.result;
+                    const alias = `{{${file.name.replace(/\.[^/.]+$/, "")}}}`;
+                    const currentFiles = Alpine.store('files');
+                    const fileData = {
+                        name: file.name,
+                        content,
+                        type: file.type,
+                        size: file.size
+                    };
+                    
+                    Alpine.store('files', [...currentFiles, fileData]);
+                    Alpine.store('aliases', {
+                        ...Alpine.store('aliases'),
+                        [alias]: content
+                    });
+                    
+                    this.saveState();
+                    this.showNotification(`Added: ${file.name}`, 'success');
                 };
-
-                reader.onerror = () => {
-                    this.showNotification(`Error reading file: ${file.name}`, 'error');
-                };
-
                 reader.readAsText(file);
             });
         },
 
-        removeFile(file) {
-            // Remove any aliases associated with this file
-            const currentAliases = Alpine.store('aliases');
-            const newAliases = { ...currentAliases };
-            Object.entries(newAliases).forEach(([alias, content]) => {
-                if (content === file.content) {
-                    delete newAliases[alias];
-                }
-            });
-            Alpine.store('aliases', newAliases);
-
-            // Remove the file
-            const currentFiles = Alpine.store('files');
-            Alpine.store('files', currentFiles.filter(f => f !== file));
-            
-            this.saveState(); // Save after removing file
-            this.showNotification('File removed', 'success');
-        },
-
-        assignAlias(file) {
-            if (!this.newAlias.trim()) {
-                this.showNotification('Please enter an alias', 'error');
-                return;
-            }
-            
-            // Normalize alias to {{alias}} format if not already
-            const normalizedAlias = this.newAlias.startsWith('{{') && this.newAlias.endsWith('}}') ? 
-                this.newAlias : `{{${this.newAlias}}}`;
-            
-            // Check if alias already exists
-            const currentAliases = Alpine.store('aliases');
-            if (currentAliases[normalizedAlias] && currentAliases[normalizedAlias] !== file.content) {
-                this.showNotification('Alias already exists', 'error');
-                return;
-            }
-            
-            // Update aliases store
-            Alpine.store('aliases', {
-                ...currentAliases,
-                [normalizedAlias]: file.content
-            });
-            
-            // Clear input and selection
-            this.newAlias = '';
-            this.selectedFile = null;
-            
-            this.saveState(); // Save after assigning alias
-            this.showNotification('Alias assigned', 'success');
-        },
-
         deleteAlias(alias) {
-            const currentAliases = Alpine.store('aliases');
-            const newAliases = { ...currentAliases };
+            const content = Alpine.store('aliases')[alias];
+            const newAliases = { ...Alpine.store('aliases') };
             delete newAliases[alias];
             Alpine.store('aliases', newAliases);
+
+            if (this.isFileAlias(content)) {
+                Alpine.store('files', Alpine.store('files').filter(f => f.content !== content));
+            }
             
-            this.saveState(); // Save after deleting alias
+            this.saveState();
             this.showNotification('Alias removed', 'success');
         },
 
@@ -548,36 +479,6 @@ document.addEventListener('alpine:init', () => {
             this.showNotification('File saved', 'success');
         },
 
-        // Add manual alias
-        addManualAlias() {
-            const alias = this.newManualAlias.trim();
-            const value = this.newManualValue.trim();
-
-            if (!alias || !value) {
-                this.showNotification('Alias and value are required', 'error');
-                return;
-            }
-
-            // Normalize alias to {{alias}} format if not already
-            const normalizedAlias = alias.startsWith('{{') && alias.endsWith('}}') ? alias : `{{${alias}}}`;
-            const currentAliases = Alpine.store('aliases');
-
-            if (currentAliases[normalizedAlias] && currentAliases[normalizedAlias] !== value) {
-                this.showNotification('Alias already exists with different value', 'error');
-                return;
-            }
-
-            Alpine.store('aliases', {
-                ...currentAliases,
-                [normalizedAlias]: value
-            });
-
-            this.newManualAlias = '';
-            this.newManualValue = '';
-            this.saveState();
-            this.showNotification('Manual alias added', 'success');
-        },
-
         // Check if an alias is file-based
         isFileAlias(content) {
             const files = Alpine.store('files');
@@ -585,76 +486,70 @@ document.addEventListener('alpine:init', () => {
         },
 
         // Start editing an alias
-        startEditingAlias(alias, content) {
+        openAliasDialog(alias = null, content = null) {
             this.editingAlias = alias;
-            // Remove {{ and }} from alias for editing
-            this.editingAliasName = alias.slice(2, -2);
-            this.editingAliasValue = content;
+            this.editingAliasName = alias ? alias.slice(2, -2) : '';
+            this.editingAliasValue = content || '';
+            this.showAliasDialog = true;
+            setTimeout(() => {
+                document.getElementById('alias-name-input').focus();
+            }, 100);
         },
 
-        // Save edited alias
-        saveEditingAlias() {
-            const oldAlias = this.editingAlias;
-            const newAlias = this.editingAliasName.trim();
-            const newValue = this.editingAliasValue.trim();
+        saveAlias() {
+            const alias = this.editingAliasName.trim();
+            const value = this.editingAliasValue.trim();
 
-            if (!newAlias || !newValue) {
+            if (!alias || !value) {
                 this.showNotification('Alias and value are required', 'error');
                 return;
             }
 
-            // Normalize new alias to {{alias}} format
-            const normalizedNewAlias = newAlias.startsWith('{{') && newAlias.endsWith('}}') ? 
-                newAlias : `{{${newAlias}}}`;
+            // Normalize alias to {{alias}} format
+            const normalizedAlias = alias.startsWith('{{') && alias.endsWith('}}') ? 
+                alias : `{{${alias}}}`;
 
             // Check if we're trying to change to an existing alias
             const currentAliases = Alpine.store('aliases');
-            if (normalizedNewAlias !== oldAlias && currentAliases[normalizedNewAlias]) {
+            if (normalizedAlias !== this.editingAlias && currentAliases[normalizedAlias]) {
                 this.showNotification('Alias already exists', 'error');
                 return;
             }
 
             // Create new aliases object with the updated alias
             const newAliases = { ...currentAliases };
-            delete newAliases[oldAlias];
-            newAliases[normalizedNewAlias] = newValue;
+            if (this.editingAlias) {
+                delete newAliases[this.editingAlias];
+            }
+            newAliases[normalizedAlias] = value;
 
             // Update the store
             Alpine.store('aliases', newAliases);
             
-            // Clear editing state
-            this.cancelEditingAlias();
-            
-            // Save and notify
-            this.saveState();
-            this.showNotification('Alias updated', 'success');
-        },
-
-        // Cancel editing
-        cancelEditingAlias() {
+            // Clear dialog state
+            this.showAliasDialog = false;
             this.editingAlias = null;
             this.editingAliasName = '';
             this.editingAliasValue = '';
+            
+            // Save and notify
+            this.saveState();
+            this.showNotification(this.editingAlias ? 'Alias updated' : 'Alias added', 'success');
         },
 
         init() {
-            // Set up drag and drop handlers
-            const uploadArea = document.querySelector('.upload-area');
-            
+            const uploadArea = document.querySelector('.symbol-map .upload-area');
             uploadArea.addEventListener('dragover', (e) => {
                 e.preventDefault();
-                uploadArea.style.borderColor = '#666';
+                uploadArea.style.borderColor = 'var(--primary-color)';
             });
-            
             uploadArea.addEventListener('dragleave', () => {
-                uploadArea.style.borderColor = '#ccc';
+                uploadArea.style.borderColor = 'var(--border-color)';
             });
-            
             uploadArea.addEventListener('drop', (e) => {
                 e.preventDefault();
-                uploadArea.style.borderColor = '#ccc';
-                const files = e.dataTransfer.files;
-                this.handleFiles({ target: { files } });
+                uploadArea.style.borderColor = 'var(--border-color)';
+                this.handleFiles({ target: { files: e.dataTransfer.files } });
             });
         },
 
@@ -668,6 +563,19 @@ document.addEventListener('alpine:init', () => {
         // Save settings to localStorage
         saveSettings() {
             localStorage.setItem('settings', JSON.stringify(Alpine.store('settings')));
+        },
+
+        // Start editing an alias
+        startEditingAlias(alias, content) {
+            this.openAliasDialog(alias, content);
+        },
+
+        // Cancel editing an alias
+        cancelAliasEdit() {
+            this.showAliasDialog = false;
+            this.editingAlias = null;
+            this.editingAliasName = '';
+            this.editingAliasValue = '';
         },
     }));
 });
