@@ -157,51 +157,28 @@ document.addEventListener('alpine:init', () => {
         // Insert symbol at cursor position
         insertSymbol(alias) {
             const editor = document.getElementById('raw-prompt-input');
-            const currentText = Alpine.store('rawPrompt') || '';
-            const selection = window.getSelection();
-            const range = selection.rangeCount ? selection.getRangeAt(0) : null;
-            
-            if (range) {
-                // Get cursor position
-                const preCaretRange = range.cloneRange();
-                preCaretRange.selectNodeContents(editor);
-                preCaretRange.setEnd(range.startContainer, range.startOffset);
-                const cursorOffset = preCaretRange.toString().length;
-                
-                // Insert symbol at cursor position
-                const newText = currentText.slice(0, cursorOffset) + alias + currentText.slice(cursorOffset);
+            const currentText = Alpine.store('rawPrompt');
+            const selectionStart = editor.selectionStart;
+            const selectionEnd = editor.selectionEnd;
+
+            // If there's a selection, replace it with the alias
+            if (selectionStart !== selectionEnd) {
+                const newText = currentText.substring(0, selectionStart) + alias + currentText.substring(selectionEnd);
                 Alpine.store('rawPrompt', newText);
-                
-                // Update editor content
                 editor.innerHTML = this.formatRawPrompt();
                 
-                // Move cursor after inserted symbol
-                const newCursorPos = cursorOffset + alias.length;
-                const walk = document.createTreeWalker(editor, NodeFilter.SHOW_TEXT);
-                let charCount = 0;
-                let targetNode = null;
-                let targetOffset = 0;
-                
-                while (targetNode = walk.nextNode()) {
-                    const nodeLength = targetNode.length;
-                    if (charCount + nodeLength >= newCursorPos) {
-                        targetOffset = newCursorPos - charCount;
-                        break;
-                    }
-                    charCount += nodeLength;
-                }
-                
-                if (targetNode) {
-                    const newRange = document.createRange();
-                    newRange.setStart(targetNode, Math.min(targetOffset, targetNode.length));
-                    newRange.collapse(true);
-                    selection.removeAllRanges();
-                    selection.addRange(newRange);
-                }
+                // Set cursor position after the inserted alias
+                const newCursorPos = selectionStart + alias.length;
+                editor.setSelectionRange(newCursorPos, newCursorPos);
             } else {
-                // If no selection, append to end
-                Alpine.store('rawPrompt', currentText + alias);
+                // If no selection, insert at cursor position or append to end
+                const newText = currentText.substring(0, selectionStart) + alias + currentText.substring(selectionStart);
+                Alpine.store('rawPrompt', newText);
                 editor.innerHTML = this.formatRawPrompt();
+                
+                // Set cursor position after the inserted alias
+                const newCursorPos = selectionStart + alias.length;
+                editor.setSelectionRange(newCursorPos, newCursorPos);
             }
         },
 
