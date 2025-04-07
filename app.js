@@ -187,44 +187,19 @@ document.addEventListener('alpine:init', () => {
         // Format final prompt with colored aliases
         formatFinalPrompt() {
             const rawPrompt = Alpine.store('rawPrompt');
-            const aliases = Alpine.store('aliases');
-            let result = rawPrompt;
-            let hasInvalidAlias = false;
-            
-            // Find all alias patterns
-            const aliasPattern = /{{([^}]+)}}/g;
-            const matches = [...rawPrompt.matchAll(aliasPattern)];
-            
-            // Check for invalid aliases
-            matches.forEach(match => {
-                const [fullMatch, aliasInner] = match;
-                // Check if the full match exists in aliases
-                if (!aliases[fullMatch]) {
-                    hasInvalidAlias = true;
-                }
-            });
-            
-            // If there are invalid aliases, return empty string
-            if (hasInvalidAlias) {
+            if (!rawPrompt || rawPrompt.trim() === '') {
                 return '';
             }
+
+            let result = rawPrompt;
+            const aliases = Alpine.store('aliases');
             
-            // Replace each alias with its content
-            matches.forEach(match => {
-                const [fullMatch] = match;
-                const content = aliases[fullMatch];
-                if (content) {
-                    result = result.replace(fullMatch, content);
-                }
-            });
-            
-            // Escape HTML characters
-            result = result
-                .replace(/&/g, '&amp;')
-                .replace(/</g, '&lt;')
-                .replace(/>/g, '&gt;')
-                .replace(/"/g, '&quot;')
-                .replace(/'/g, '&#039;');
+            // Replace aliases with their content
+            for (const [alias, content] of Object.entries(aliases)) {
+                // Use the full alias (which already includes {{}})
+                const regex = new RegExp(alias.replace(/[.*+?^${}()|[\]\\]/g, '\\$&'), 'g');
+                result = result.replace(regex, content);
+            }
             
             return result;
         },

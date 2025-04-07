@@ -179,7 +179,7 @@
             <div class="raw-prompt-container">
                 <h2>Raw Prompt</h2>
                 <!-- Quick Add Buttons -->
-                <div class="quick-add-buttons">
+                <div class="quick-add-buttons" x-show="Object.keys($store.aliases).length > 0">
                     <h3>Quick Add Symbols</h3>
                     <div class="quick-add-grid">
                         <template x-for="(content, alias) in $store.aliases">
@@ -196,7 +196,7 @@
                     <textarea 
                         id="raw-prompt-input"
                         x-model="$store.rawPrompt" 
-                        placeholder="Type your prompt here (e.g., Using {{vault}}...)"
+                        placeholder="Add items to the Symbol Map and then type your prompt here"
                         class="raw-prompt-input"
                     ></textarea>
                 </div>
@@ -211,31 +211,31 @@
 
             <!-- Final Prompt Viewer -->
             <div class="final-prompt-container">
-                <h2>Final Prompt</h2>
-                <template x-if="formatFinalPrompt()">
-                    <div class="final-prompt-content">
-                        <div class="final-prompt-header">
-                            <div class="prompt-stats">
-                                <span x-text="`${Alpine.store('finalPrompt').length} chars`"></span>
-                                <span x-text="`~${Math.ceil(Alpine.store('finalPrompt').length / 4)} tokens`"></span>
-                            </div>
-                            <div class="prompt-actions">
-                                <button title="Copy to Clipboard" @click="copyToClipboard()">📋</button>
-                                <button title="Save to File" @click="saveToFile()">💾</button>
+                <div class="final-prompt-content">
+                <div class="final-prompt-header">
+                    <h2>Final Prompt</h2>
+                    <div class="prompt-stats">
+                        <span x-text="`${Alpine.store('finalPrompt').length} chars`"></span>
+                        <span x-text="`~${Math.ceil(Alpine.store('finalPrompt').length / 4)} tokens`"></span>
+                    </div>
+                    <div class="prompt-actions">
+                        <button @click="copyToClipboard" class="icon-button" title="Copy to clipboard">📋</button>
+                        <button @click="saveToFile" class="icon-button" title="Save to file">💾</button>
+                    </div>
+                </div>
+                    <template x-if="$store.rawPrompt && $store.rawPrompt.trim() === ''">
+                        <div class="final-prompt-error">
+                            <span class="error-icon">⚠️</span>
+                            <div class="error-message">
+                                <h3>Empty Prompt</h3>
+                                <p>Start typing in the Raw Prompt editor to see the final result here.</p>
                             </div>
                         </div>
+                    </template>
+                    <template x-if="$store.rawPrompt && $store.rawPrompt.trim() !== ''">
                         <div class="final-prompt-viewer" x-html="formatFinalPrompt()"></div>
-                    </div>
-                </template>
-                <template x-if="!formatFinalPrompt()">
-                    <div class="final-prompt-error">
-                        <div class="error-icon">⚠️</div>
-                        <div class="error-message">
-                            <h3>Invalid Aliases Detected</h3>
-                            <p>Check your Raw Prompt for any misspelled or undefined aliases (highlighted in red).</p>
-                        </div>
-                    </div>
-                </template>
+                    </template>
+                </div>
             </div>
         </div>
     </div>
