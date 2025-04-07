@@ -27,6 +27,8 @@ document.addEventListener('alpine:init', () => {
         newManualAlias: '',
         newManualValue: '',
         showAliasDialog: false,
+        finalPromptAnimationTimer: null,
+        finalPromptContainer: null,
 
         // Format raw prompt with colored aliases
         formatRawPrompt() {
@@ -527,6 +529,43 @@ document.addEventListener('alpine:init', () => {
                 e.preventDefault();
                 uploadArea.style.borderColor = 'var(--border-color)';
                 this.handleFiles({ target: { files: e.dataTransfer.files } });
+            });
+            this.finalPromptContainer = document.querySelector('.final-prompt-container');
+            
+            // Watch for changes in raw prompt and update final prompt
+            Alpine.effect(() => {
+                const rawPrompt = Alpine.store('rawPrompt');
+                const aliases = Alpine.store('aliases');
+                
+                // Replace aliases with their content
+                let finalPrompt = rawPrompt;
+                for (const [alias, content] of Object.entries(aliases)) {
+                    // Use the full alias (which already includes {{}})
+                    const regex = new RegExp(alias.replace(/[.*+?^${}()|[\]\\]/g, '\\$&'), 'g');
+                    finalPrompt = finalPrompt.replace(regex, content);
+                }
+                
+                Alpine.store('finalPrompt', finalPrompt);
+                
+                // Trigger animation with debounce
+                if (this.finalPromptAnimationTimer) {
+                    clearTimeout(this.finalPromptAnimationTimer);
+                }
+                
+                this.finalPromptAnimationTimer = setTimeout(() => {
+                    if (this.finalPromptContainer) {
+                        // Remove any existing animation class
+                        this.finalPromptContainer.classList.remove('updated');
+                        // Force a reflow
+                        void this.finalPromptContainer.offsetWidth;
+                        // Add the animation class
+                        this.finalPromptContainer.classList.add('updated');
+                        // Remove the class after animation completes
+                        setTimeout(() => {
+                            this.finalPromptContainer.classList.remove('updated');
+                        }, 500);
+                    }
+                }, 100); // Reduced debounce time for more responsive feel
             });
         },
 

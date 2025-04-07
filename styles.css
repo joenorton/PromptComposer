@@ -366,10 +366,46 @@ body {
 
 .final-prompt-container {
     grid-column: 1 / -1;
-    padding: 1.5rem;
-    background: white;
+    background: var(--surface-color);
     border-radius: 8px;
+    padding: 1.5rem;
     box-shadow: 0 2px 4px rgba(0, 0, 0, 0.05);
+    position: relative;
+    overflow: hidden;
+    border: 2px solid transparent;
+    transition: border-color 0.3s ease;
+}
+
+.final-prompt-container::after {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background: var(--primary-color);
+    opacity: 0;
+    pointer-events: none;
+    transition: opacity 0.3s ease;
+}
+
+.final-prompt-container.updated {
+    border-color: #60a5fa;
+    animation: borderPulse 1s ease-out;
+}
+
+@keyframes borderPulse {
+    0% {
+        border-color: #60a5fa;
+        box-shadow: 0 0 0 0 rgba(96, 165, 250, 0.4);
+    }
+    70% {
+        box-shadow: 0 0 0 10px rgba(96, 165, 250, 0);
+    }
+    100% {
+        border-color: transparent;
+        box-shadow: 0 0 0 0 rgba(96, 165, 250, 0);
+    }
 }
 
 .final-prompt-content {
@@ -1231,4 +1267,28 @@ body {
 
 .add-alias-button:hover {
     transform: scale(1.1);
+}
+
+/* Dark mode adjustments */
+[data-theme="dark"] .final-prompt-container::after {
+    background: var(--dark-primary-color);
+}
+
+[data-theme="dark"] .final-prompt-container.updated {
+    border-color: #3b82f6;
+    animation: borderPulseDark 1s ease-out;
+}
+
+@keyframes borderPulseDark {
+    0% {
+        border-color: #3b82f6;
+        box-shadow: 0 0 0 0 rgba(59, 130, 246, 0.4);
+    }
+    70% {
+        box-shadow: 0 0 0 10px rgba(59, 130, 246, 0);
+    }
+    100% {
+        border-color: transparent;
+        box-shadow: 0 0 0 0 rgba(59, 130, 246, 0);
+    }
 }
