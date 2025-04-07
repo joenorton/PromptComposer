@@ -208,6 +208,9 @@ document.addEventListener('alpine:init', () => {
             let result = rawPrompt;
             const aliases = Alpine.store('aliases');
     
+            // Find all alias patterns
+            const aliasPattern = /{{([^}]+)}}/g;
+            const matches = [...rawPrompt.matchAll(aliasPattern)];
             // Replace aliases with their content
             // Replace each alias with its content
             matches.forEach(match => {
