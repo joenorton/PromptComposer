@@ -29,6 +29,20 @@ document.addEventListener('alpine:init', () => {
         showAliasDialog: false,
         finalPromptAnimationTimer: null,
         finalPromptContainer: null,
+        showFileAliasDialog: false,
+        editingAliasContent: null,
+        selectedFile: null,
+
+        get cleanAliasName() {
+            if (this.editingAliasName) {
+                return this.editingAliasName.replace(/^{{/, '').replace(/}}$/, '');
+            }
+            return '';
+        },
+
+        set cleanAliasName(value) {
+            this.editingAliasName = value ? `{{${value}}}` : '';
+        },
 
         // Format raw prompt with colored aliases
         formatRawPrompt() {
@@ -184,7 +198,7 @@ document.addEventListener('alpine:init', () => {
             }
         },
 
-        // Format final prompt with colored aliases
+        // Format final prompt
         formatFinalPrompt() {
             const rawPrompt = Alpine.store('rawPrompt');
             if (!rawPrompt || rawPrompt.trim() === '') {
@@ -193,14 +207,26 @@ document.addEventListener('alpine:init', () => {
 
             let result = rawPrompt;
             const aliases = Alpine.store('aliases');
-            
+    
             // Replace aliases with their content
-            for (const [alias, content] of Object.entries(aliases)) {
-                // Use the full alias (which already includes {{}})
-                const regex = new RegExp(alias.replace(/[.*+?^${}()|[\]\\]/g, '\\$&'), 'g');
-                result = result.replace(regex, content);
-            }
-            
+            // Replace each alias with its content
+            matches.forEach(match => {
+ 
+                const [fullMatch] = match;
+                const content = aliases[fullMatch];
+                if (content) {
+                    result = result.replace(fullMatch, content);
+                }
+
+            });
+            // Escape HTML characters
+            result = result
+                .replace(/&/g, '&amp;')
+                .replace(/</g, '&lt;')
+                .replace(/>/g, '&gt;')
+                .replace(/"/g, '&quot;')
+                .replace(/'/g, '&#039;');
+        
             return result;
         },
 
@@ -440,53 +466,82 @@ document.addEventListener('alpine:init', () => {
         },
 
         // Start editing an alias
-        openAliasDialog(alias = null, content = null) {
+        startEditingAlias(alias, content) {
             this.editingAlias = alias;
-            this.editingAliasName = alias ? alias.slice(2, -2) : '';
-            this.editingAliasValue = content || '';
-            this.showAliasDialog = true;
-            setTimeout(() => {
-                document.getElementById('alias-name-input').focus();
-            }, 100);
+            this.editingAliasName = alias || '';
+            this.editingAliasContent = content;
+            
+            if (this.isFileAlias(content)) {
+                this.showFileAliasDialog = true;
+                setTimeout(() => {
+                    document.getElementById('file-alias-name-input').focus();
+                }, 100);
+            } else {
+                this.editingAliasValue = content || '';
+                this.showAliasDialog = true;
+                setTimeout(() => {
+                    document.getElementById('alias-name-input').focus();
+                }, 100);
+            }
+        },
+
+        cancelAliasEdit() {
+            this.editingAlias = null;
+            this.editingAliasName = '';
+            this.editingAliasValue = '';
+            this.editingAliasContent = null;
+            this.showAliasDialog = false;
+            this.showFileAliasDialog = false;
+        },
+
+        saveFileAlias() {
+            const newAlias = this.editingAliasName;
+            
+            if (!newAlias) {
+                this.showNotification('Alias cannot be empty', 'error');
+                return;
+            }
+            
+            if (newAlias !== this.editingAlias && this.$store.aliases[newAlias]) {
+                this.showNotification('Alias already exists', 'error');
+                return;
+            }
+
+            // Remove old alias and add new one
+            const content = this.$store.aliases[this.editingAlias];
+            delete this.$store.aliases[this.editingAlias];
+            this.$store.aliases[newAlias] = content;
+
+            this.cancelAliasEdit();
+            this.saveState();
+            this.showNotification('Alias updated', 'success');
         },
 
         saveAlias() {
-            const alias = this.editingAliasName.trim();
+            const alias = this.editingAliasName;
             const value = this.editingAliasValue.trim();
-
+            
             if (!alias || !value) {
                 this.showNotification('Alias and value are required', 'error');
                 return;
             }
-
-            // Normalize alias to {{alias}} format
-            const normalizedAlias = alias.startsWith('{{') && alias.endsWith('}}') ? 
-                alias : `{{${alias}}}`;
-
-            // Check if we're trying to change to an existing alias
-            const currentAliases = Alpine.store('aliases');
-            if (normalizedAlias !== this.editingAlias && currentAliases[normalizedAlias]) {
+            
+            if (alias !== this.editingAlias && this.$store.aliases[alias]) {
                 this.showNotification('Alias already exists', 'error');
                 return;
             }
 
             // Create new aliases object with the updated alias
-            const newAliases = { ...currentAliases };
+            const newAliases = { ...this.$store.aliases };
             if (this.editingAlias) {
                 delete newAliases[this.editingAlias];
             }
-            newAliases[normalizedAlias] = value;
+            newAliases[alias] = value;
 
             // Update the store
-            Alpine.store('aliases', newAliases);
+            this.$store.aliases = newAliases;
             
-            // Clear dialog state
-            this.showAliasDialog = false;
-            this.editingAlias = null;
-            this.editingAliasName = '';
-            this.editingAliasValue = '';
-            
-            // Save and notify
+            this.cancelAliasEdit();
             this.saveState();
             this.showNotification(this.editingAlias ? 'Alias updated' : 'Alias added', 'success');
         },
@@ -556,17 +611,15 @@ document.addEventListener('alpine:init', () => {
             localStorage.setItem('settings', JSON.stringify(Alpine.store('settings')));
         },
 
-        // Start editing an alias
-        startEditingAlias(alias, content) {
-            this.openAliasDialog(alias, content);
-        },
-
-        // Cancel editing an alias
-        cancelAliasEdit() {
-            this.showAliasDialog = false;
-            this.editingAlias = null;
-            this.editingAliasName = '';
-            this.editingAliasValue = '';
+        // Normalize alias to {{alias}} format
+        normalizeAlias(alias) {
+            if (alias.startsWith('{{') && alias.endsWith('}}')) {
+                return alias;
+            } else if (alias.trim() === '') {
+                return null;
+            } else {
+                return `{{${alias}}}`;
+            }
         },
     }));
 });

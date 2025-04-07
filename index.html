@@ -104,7 +104,7 @@
             <div class="symbol-map">
                 <div class="symbol-map-header">
                     <h2>Symbol Map</h2>
-                    <button @click="openAliasDialog()" class="add-alias-button" title="Add Manual Alias">+</button>
+                    <button @click="startEditingAlias(null, null)" class="add-alias-button" title="Add Manual Alias">+</button>
                 </div>
                 <!-- Combined Upload Area -->
                 <div class="upload-area">
@@ -125,17 +125,19 @@
                         <div class="empty-state">No aliases assigned yet</div>
                     </template>
                     <template x-for="(content, alias) in $store.aliases" :key="alias">
-                        <div class="alias-item" :class="{ 'file-based': isFileAlias(content), 'editing': editingAlias === alias }">
+                        <div class="alias-item" 
+                             :class="{ 'file-based': isFileAlias(content), 'editing': editingAlias === alias }"
+                             @click="startEditingAlias(alias, content)">
                             <div class="alias-item-content">
                                 <span class="alias-name" x-text="alias"></span>
                                 <span class="alias-info" 
                                       x-text="isFileAlias(content) ? getFileNameForContent(content) + ' (' + formatFileSize($store.files.find(f => f.content === content)?.size || 0) + ')' : 'Manual'"></span>
                                 <div class="alias-actions">
                                     <button x-show="!isFileAlias(content)" 
-                                            @click="startEditingAlias(alias, content)" 
+                                            @click.stop="startEditingAlias(alias, content)" 
                                             class="edit-button"
                                             title="Edit alias">✎</button>
-                                    <button @click="deleteAlias(alias)" 
+                                    <button @click.stop="deleteAlias(alias)" 
                                             class="delete-button"
                                             title="Delete alias">×</button>
                                 </div>
@@ -155,7 +157,7 @@
                             <input 
                                 type="text" 
                                 id="alias-name-input"
-                                x-model="editingAliasName" 
+                                x-model="cleanAliasName" 
                                 placeholder="Enter alias (e.g., SEPP)"
                                 @keyup.enter="saveAlias"
                             >
@@ -171,6 +173,35 @@
                     <div class="dialog-actions">
                         <button @click="cancelAliasEdit" class="dialog-button">Cancel</button>
                         <button @click="saveAlias" class="dialog-button primary">Save</button>
+                    </div>
+                </div>
+            </div>
+
+            <!-- File Alias Dialog -->
+            <div class="dialog-overlay" x-show="$data.showFileAliasDialog" style="display: none;">
+                <div class="dialog">
+                    <h3>Edit File Alias</h3>
+                    <div class="dialog-content">
+                        <div class="file-alias-info">
+                            <div class="input-group">
+                                <label for="file-alias-name-input">Alias:</label>
+                                <input 
+                                    type="text" 
+                                    id="file-alias-name-input"
+                                    x-model="cleanAliasName" 
+                                    placeholder="Enter alias (e.g., SEPP)"
+                                    @keyup.enter="saveFileAlias"
+                                >
+                            </div>
+                            <div class="file-info">
+                                <span class="file-name" x-text="$data.getFileNameForContent($data.editingAliasContent)"></span>
+                                <span class="file-size" x-text="$data.formatFileSize($store.files.find(f => f.content === $data.editingAliasContent)?.size || 0)"></span>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="dialog-actions">
+                        <button @click="$data.cancelAliasEdit" class="dialog-button">Cancel</button>
+                        <button @click="$data.saveFileAlias" class="dialog-button primary">Save</button>
                     </div>
                 </div>
             </div>
