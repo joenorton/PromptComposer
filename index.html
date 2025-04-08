@@ -103,7 +103,7 @@
             <!-- Symbol Map Section -->
             <div class="symbol-map">
                 <div class="symbol-map-header">
-                    <h2>Symbol Map</h2>
+                    <h2>Prompt Vars</h2>
                     <button @click="startEditingAlias(null, null)" class="add-alias-button" title="Add Manual Alias">+</button>
                 </div>
                 <!-- Combined Upload Area -->
@@ -150,7 +150,7 @@
             <!-- Alias Dialog -->
             <div class="dialog-overlay" x-show="showAliasDialog" style="display: none;">
                 <div class="dialog">
-                    <h3 x-text="editingAlias ? 'Edit Alias' : 'Add Manual Alias'"></h3>
+                    <h3 x-text="editingAlias ? 'Edit Alias' : 'Add Manual Var'"></h3>
                     <div class="dialog-content">
                         <div class="input-group">
                             <label for="alias-name-input">Alias:</label>
@@ -211,7 +211,7 @@
                 <h2>Raw Prompt</h2>
                 <!-- Quick Add Buttons -->
                 <div class="quick-add-buttons" x-show="Object.keys($store.aliases).length > 0">
-                    <h3>Quick Add Symbols</h3>
+                    <h3>Quick Add Prompt Vars</h3>
                     <div class="quick-add-grid">
                         <template x-for="(content, alias) in $store.aliases">
                             <button 
@@ -227,7 +227,7 @@
                     <textarea 
                         id="raw-prompt-input"
                         x-model="$store.rawPrompt" 
-                        placeholder="Add items to the Symbol Map and then type your prompt here"
+                        placeholder="Add Prompt Vars and then type your prompt here using them"
                         class="raw-prompt-input"
                     ></textarea>
                 </div>
