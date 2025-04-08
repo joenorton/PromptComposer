@@ -955,8 +955,6 @@ body {
     width: 100%;
     min-height: 150px;
     padding: 1rem;
-    border: 1px solid #ddd;
-    border-radius: 4px;
     font-family: inherit;
     font-size: 1rem;
     line-height: 1.6;
@@ -965,6 +963,8 @@ body {
 .raw-prompt-input {
     resize: vertical;
     background: white;
+    border: 1px solid #ddd;
+    border-radius: 4px;
 }
 
 .raw-prompt-preview {
@@ -1223,7 +1223,6 @@ body {
 .add-alias-button {
     width: 32px;
     height: 32px;
-    border-radius: 50%;
     background: var(--primary-color);
     color: var(--text-color);
     border: none;
