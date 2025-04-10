@@ -2,6 +2,8 @@
 
 ⚡ a lean, local-first prompt crafting tool with symbolic file aliasing and real-time preview. built for hackers, prompt engineers, and LLM nerds who want clarity before compute.
 
+![PromptComposer](https://github.com/joenorton/promptcomposer/og-preview.png?raw=true)
+
 ## 🔥 Features
 
 - 🗃 drag & drop file upload with symbolic aliases (e.g. `{{test}}`)
