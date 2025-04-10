@@ -1,10 +1,10 @@
-# ContextSmash
+# PromptComposer
 
 ⚡ a lean, local-first prompt crafting tool with symbolic file aliasing and real-time preview. built for hackers, prompt engineers, and LLM nerds who want clarity before compute.
 
 ## 🔥 Features
 
-- 🗃 drag & drop file upload with symbolic aliases (e.g. `{{vault}}`)
+- 🗃 drag & drop file upload with symbolic aliases (e.g. `{{test}}`)
 - 🔣 manual alias creation for custom symbols and reusable text snippets
 - 🖊️ inline alias editing for both files and manual aliases
 - ✨ intelligent highlighting with color-coded valid, invalid, and repeated aliases
@@ -19,12 +19,12 @@
 ## 🧪 Try It Out
 
 **GitHub Pages:** 
-Try it out here:  https://joenorton.github.io/contextsmash/
+Try it out here:  https://joenorton.github.io/promptcomposer/
 
 — or host it locally:
 
 ```bash
-git clone https://github.com/joenorton/contextsmash.git
+git clone https://github.com/joenorton/promptcomposer.git
 cd contextsmash
 python -m http.server 8000
 ```
