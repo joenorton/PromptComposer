@@ -27,7 +27,7 @@ Try it out here:  https://joenorton.github.io/promptcomposer/
 
 ```bash
 git clone https://github.com/joenorton/promptcomposer.git
-cd contextsmash
+cd promptcomposer
 python -m http.server 8000
 ```
 
