@@ -1,12 +1,12 @@
-Below is a quick specification for adding key-value pair functionality to the Symbol Map in your ContextSmash web PoC, based on the provided app.js. This spec outlines the feature’s purpose, UI changes, and modifications to the existing code structure—without rewriting the full implementation. I’ll highlight where and how to integrate it into your current setup, leveraging Alpine.js and your existing stores, while keeping it lean and compatible with the real-time feedback system.
+Below is a quick specification for adding key-value pair functionality to the Prompt Variables panel in your PromptComposer web PoC, based on the provided app.js. This spec outlines the feature's purpose, UI changes, and modifications to the existing code structure—without rewriting the full implementation. I'll highlight where and how to integrate it into your current setup, leveraging Alpine.js and your existing stores, while keeping it lean and compatible with the real-time feedback system.
 
-Specification: Key-Value Pairs in Symbol Map
+Specification: Key-Value Pairs in Prompt Variables
 
 Purpose
-Enable users to manually define aliases with custom text values directly in the Symbol Map (e.g., {{SEPP}} = "---\n"), alongside file-based aliases. These key-value pairs will be stored in the aliases store, resolved in prompts like file contents, and persisted via localStorage. This enhances flexibility for quick-access symbols (e.g., separators, boilerplate) without requiring file uploads.
+Enable users to manually define aliases with custom text values directly in the Prompt Variables panel (e.g., {{SEPP}} = "---\n"), alongside file-based aliases. These key-value pairs will be stored in the aliases store, resolved in prompts like file contents, and persisted via localStorage. This enhances flexibility for quick-access symbols (e.g., separators, boilerplate) without requiring file uploads.
 Requirements
 
-    UI Addition: Add an input area in the Symbol Map to create new key-value pairs.
+    UI Addition: Add an input area in the Prompt Variables panel to create new key-value pairs.
     Storage: Store manual aliases in the existing Alpine.store('aliases') alongside file-based entries.
     Resolution: Ensure the prompt resolution logic treats manual aliases identically to file-based ones.
     Persistence: Save and load manual aliases with the existing saveState mechanism.
@@ -14,19 +14,19 @@ Requirements
 
 Proposed Changes
 1. UI Integration
-Where: In the HTML tied to Alpine.data('app'), likely near the Symbol Map display (e.g., where aliases are listed).
+Where: In the HTML tied to Alpine.data('app'), likely near the Prompt Variables display (e.g., where aliases are listed).
 What to Add:
 
     A "New Alias" section with two inputs:
         Alias name (e.g., {{SEPP}} or just SEPP, normalized to {{SEPP}}).
         Value (e.g., "---\n").
     A button to submit the pair.
-    Update the Symbol Map list to distinguish manual vs. file-based aliases visually (optional).
+    Update the Prompt Variables list to distinguish manual vs. file-based aliases visually (optional).
 
 HTML Example:
 html
 
-<div class="symbol-map">
+<div class="prompt-vars">
   <!-- Existing alias list -->
   <template x-for="(content, alias) in $store.aliases" :key="alias">
     <div>
@@ -144,7 +144,7 @@ What to Change:
 
 5. Optional Enhancements
 
-    Visual Distinction: In the Symbol Map UI, check if an alias maps to a file in Alpine.store('files'):
+    Visual Distinction: In the Prompt Variables UI, check if an alias maps to a file in Alpine.store('files'):
     html
 
     <span x-text="Object.values($store.files).some(f => f.content === content) ? 'File' : 'Manual'"></span>
@@ -159,7 +159,7 @@ Integration Points in app.js
         Add addManualAlias method as described.
         Reuse deleteAlias and saveState as-is.
     HTML (not shown in app.js):
-        Add the input UI to your Symbol Map section, calling addManualAlias.
+        Add the input UI to your Prompt Variables section, calling addManualAlias.
 
 Example Workflow
 
@@ -171,5 +171,5 @@ Example Workflow
 Why This Works
 
     Leverages existing aliases store and resolution logic—no rewrite needed.
-    Fits Alpine.js’s reactive model for real-time updates.
+    Fits Alpine.js's reactive model for real-time updates.
     Keeps the PoC lean while adding a powerful feature.

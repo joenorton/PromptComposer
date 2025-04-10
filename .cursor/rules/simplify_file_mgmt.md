@@ -2,14 +2,14 @@ Implementation Plan
 1. UI Modifications (index.html)
 
     Remove the entire .file-picker div from .main-content
-    Add upload functionality to .symbol-map section
-    Update the symbol map to handle both file uploads and manual aliases in one list
+    Add upload functionality to .prompt-vars section
+    Update the prompt variables to handle both file uploads and manual aliases in one list
 
 Proposed HTML changes:
 html
 
-<div class="symbol-map">
-    <h2>Symbol Map</h2>
+<div class="prompt-vars">
+    <h2>Prompt Variables</h2>
     <!-- Combined Upload Area -->
     <div class="upload-area">
         <label for="file-input" class="file-input-label">
@@ -71,7 +71,7 @@ Alpine.data('app', () => ({
     // Remove: selectedFile, showFilenameDialog, filename (if only saving workflows)
     // Keep most existing properties
 
-    // Update handleFiles to work directly with symbol map
+    // Update handleFiles to work directly with prompt variables
     handleFiles(event) {
         const files = Array.from(event.target.files);
         files.forEach(file => {
@@ -117,7 +117,7 @@ Alpine.data('app', () => ({
 
     // Simplify init for new drag-and-drop target
     init() {
-        const uploadArea = document.querySelector('.symbol-map .upload-area');
+        const uploadArea = document.querySelector('.prompt-vars .upload-area');
         uploadArea.addEventListener('dragover', (e) => {
             e.preventDefault();
             uploadArea.style.borderColor = '#666';
@@ -140,12 +140,12 @@ Alpine.data('app', () => ({
 3. CSS Modifications (styles.css)
 
     Add styling for file-based vs manual aliases
-    Adjust symbol map layout
+    Adjust prompt variables layout
 
 Proposed CSS changes:
 css
 
-.symbol-map .upload-area {
+.prompt-vars .upload-area {
     margin-bottom: 1.5rem;
 }
 
@@ -181,7 +181,7 @@ Implementation Steps
         Save current working version
     Update HTML
         Remove file-picker section
-        Add upload area to symbol-map
+        Add upload area to prompt-vars
         Modify alias list template
     Update JavaScript
         Refactor file handling logic
@@ -199,10 +199,10 @@ Implementation Steps
 
 Success Criteria
 
-    Files can be uploaded directly in symbol map
+    Files can be uploaded directly in prompt variables
     Clear visual distinction between file-based and manual aliases
     All existing functionality (editing, preview, etc.) remains intact
     No performance regression
     Responsive design maintained
 
-This plan maintains the core functionality while simplifying the interface as requested. The combined symbol map will serve as the central hub for both file management and alias handling, reducing cognitive overhead for users.
+This plan maintains the core functionality while simplifying the interface as requested. The combined prompt variables panel will serve as the central hub for both file management and alias handling, reducing cognitive overhead for users.
